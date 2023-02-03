@@ -1,19 +1,20 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.Identity.Web;
-using Microsoft.Identity.Web.UI;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services
-    .AddControllersWithViews()
-    .AddMicrosoftIdentityUI();
+    .AddControllersWithViews();
 
 builder.Services.AddRazorPages();
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 builder.Services
     .AddAuthentication(opts =>
@@ -33,13 +34,16 @@ builder.Services
         opts.ClientSecret = config.ClientSecret;
         opts.ResponseType = OpenIdConnectResponseType.Code;
         opts.ResponseMode = OpenIdConnectResponseMode.FormPost;
+        
+        opts.TokenValidationParameters = new TokenValidationParameters
+        {
+            NameClaimType = "name",
+            RoleClaimType = "role"
+        };
 
         opts.Events.OnTokenResponseReceived += context =>
         {
-            Console.WriteLine("-----------------------Access token----------------------------");
-            Console.WriteLine(JsonSerializer.Serialize(context.TokenEndpointResponse.IdToken));
-            
-            Console.WriteLine(context.HttpContext.User.Identity?.Name);
+            Console.WriteLine($"{Environment.NewLine}{context.TokenEndpointResponse.AccessToken}");
             return Task.CompletedTask;
         };
     });
